@@ -1,0 +1,392 @@
+<?php
+App::uses('AppController', 'Controller');
+/**
+ * Stations Controller
+ *
+ * @property Station $Station
+ * @property PaginatorComponent $Paginator
+ * @property SessionComponent $Session
+ */
+class StationsController extends AppController {
+
+    /**
+     * Components
+     *
+     * @var array
+     */
+    public $components = array('Paginator', 'Session', 'RequestHandler');
+
+    /**
+     * index method
+     *
+     * @return void
+     */
+    public function index() {
+        $this->Station->recursive = 0;
+        // debug($this->Station->find('all'));
+        $this->set('stations', $this->Paginator->paginate());
+        $stations = $this->Station->find('all');
+        $this->set(array(
+            'stations' => $stations));
+    }
+
+    /**
+     * view method
+     *
+     * @throws NotFoundException
+     * @param string $id
+     * @return void
+     */
+    public function _view($id = null) {
+        if (!$this->Station->exists($id)) {
+            throw new NotFoundException(__('Invalid station'));
+        }
+        $options = array('conditions' => array('Station.' . $this->Station->primaryKey => $id));
+        $this->set('station', $this->Station->find('first', $options));
+    }
+
+    /**
+     * add method
+     *
+     * @return void
+     */
+    public function _add() {
+        if ($this->request->is('post')) {
+            $this->Station->create();
+            if ($this->Station->save($this->request->data)) {
+                $this->Session->setFlash(__('The station has been saved.'));
+                return $this->redirect(array('action' => 'index'));
+            } else {
+                $this->Session->setFlash(__('The station could not be saved. Please, try again.'));
+            }
+        }
+    }
+
+    /**
+     * edit method
+     *
+     * @throws NotFoundException
+     * @param string $id
+     * @return void
+     */
+    public function _edit($id = null) {
+        if (!$this->Station->exists($id)) {
+            throw new NotFoundException(__('Invalid station'));
+        }
+        if ($this->request->is(array('post', 'put'))) {
+            if ($this->Station->save($this->request->data)) {
+                $this->Session->setFlash(__('The station has been saved.'));
+                return $this->redirect(array('action' => 'index'));
+            } else {
+                $this->Session->setFlash(__('The station could not be saved. Please, try again.'));
+            }
+        } else {
+            $options = array('conditions' => array('Station.' . $this->Station->primaryKey => $id));
+            $this->request->data = $this->Station->find('first', $options);
+        }
+    }
+
+    /**
+     * delete method
+     *
+     * @throws NotFoundException
+     * @param string $id
+     * @return void
+     */
+    public function _delete($id = null) {
+        $this->Station->id = $id;
+        if (!$this->Station->exists()) {
+            throw new NotFoundException(__('Invalid station'));
+        }
+        $this->request->onlyAllow('post', 'delete');
+        if ($this->Station->delete()) {
+            $this->Session->setFlash(__('The station has been deleted.'));
+        } else {
+            $this->Session->setFlash(__('The station could not be deleted. Please, try again.'));
+        }
+        return $this->redirect(array('action' => 'index'));
+    }
+
+    public function select(){
+
+        $this->set('select0', $this->Station->find('list', array(
+            'fields' => array('id' , 'title')
+        )));
+
+        $this->set('select1', $this->Station->find('list', array(
+            'fields' => array('id' , 'title')
+        )));
+
+        $this->set('name', $this->Station->find('list', array(
+            'fields' => array('title', 'title')
+        )));
+
+    }
+
+    public function viewCoordinateById(){
+
+        $stationId = $this->request->query['station'];
+
+        $coordinate = $this->Station->find('stationLocation',array(
+            'conditions' => array('id' => $stationId)));
+
+        $this->set(array('coordinate' => $coordinate));
+
+    }
+
+    public function viewCoordinateByName(){
+
+        $stationName = $this->request->query['station'];
+
+        $coordinate = $this->Station->find('stationLocation',array(
+            'conditions' => array('title' => $stationName)));
+
+        $this->set(array('coordinate' => $coordinate));
+
+    }
+
+    public function viewInsideFacility(){
+
+        $stationId = $this->request->query['station'];
+
+        $stationInfo = Hash::combine($this->Station->findById($stationId), 'Place.{n}.id','Place.{n}.sameAs');
+
+        $sameAs = array_shift($stationInfo);
+
+        $conskey = Configure::read("CONSKEY");
+
+        $url = "https://api.tokyometroapp.jp/api/v2/datapoints?rdf:type=odpt:Station&"
+            . "owl:sameAs=" . trim($sameAs) . "&acl:consumerKey=" . $conskey;
+
+        $obj = json_decode(file_get_contents($url));
+
+        $info = get_object_vars(array_shift($obj));
+
+        $outArray = array();
+
+        foreach($info['odpt:exit'] as $exitId){
+
+            $out = array();
+
+            $exitUrl = "https://api.tokyometroapp.jp/api/v2/datapoints/"
+                . $exitId . "?acl:consumerKey=" . $conskey;
+
+            $exitInfo = json_decode(file_get_contents($exitUrl));
+
+            $exit = get_object_vars(array_shift($exitInfo));
+
+            $out['name'] = $exit['dc:title'];
+            $out['id'] = $exit['@id'];
+            $out['lat'] = $exit['geo:lat'];
+            $out['lon'] = $exit['geo:long'];
+
+            $outArray[] = $out;
+        }
+
+        $this->set(array('exit' => $outArray));
+
+    }
+
+    public function viewOutsideFacility(){
+
+        $stationId = $this->request->query['station'];
+
+        $coordinate = $this->Station->find('stationLocation',array(
+            'conditions' => array('id' => $stationId)));
+
+        $yappkey = Configure::read("YAPPKEY");
+
+        $radius = 3;
+
+        $url = "http://search.olp.yahooapis.jp/OpenLocalPlatform/V1/localSearch?appid="
+            . $yappkey . "&lat=" . $coordinate['lat'] . "&lon=" . $coordinate['lon'] . 
+            "&dist=" . $radius . "&gc=0115&results=10&sort=dist&output=json";
+
+        $obj = json_decode(file_get_contents($url));
+
+        $outArray = array();
+
+        foreach($obj->Feature as $info){
+            $out = array();
+            $out['id'] = $info->Id;
+            $out['name'] = $info->Name;
+            $geo = explode(',', $info->Geometry->Coordinates);
+            $out['lon'] = $geo[0];
+            $out['lat'] = $geo[1];
+
+            $outArray[] = $out;
+
+        }
+
+        $this->set(array('detail' => $outArray));
+
+    }
+
+
+    public function compareByDistance(){
+
+        $stationIds = array();
+
+        $stationIds[] = $this->request->query['station_0'];
+        $stationIds[] = $this->request->query['station_1'];
+
+        $points = $this->Station->getPointInfo($stationIds);
+
+        $middleCoordinate = $this->Station->getMiddlePoint($points);
+
+        $conskey = Configure::read("CONSKEY");
+
+        $radius = 1000;
+
+        $midPointNum = 0;
+
+        while($midPointNum < 5){
+
+            $url = "https://api.tokyometroapp.jp/api/v2/places?rdf:type=odpt:Station&lon=" . 
+                $middleCoordinate['lon'] . "&lat=" . $middleCoordinate['lat'] ."&radius=" . 
+                $radius . "&acl:consumerKey=" . $conskey;
+
+            $obj = json_decode(file_get_contents($url));
+
+            $midPointNames = array();
+
+            foreach($obj as $info){
+                $midPointInfo = get_object_vars($info);
+                $pointName = $midPointInfo['dc:title'];
+                if(!in_array($pointName, $midPointNames))
+                    $midPointNames[] = $pointName;
+            }
+
+            $midPointNum = count($midPointNames);
+            $radius += 500;
+
+        }
+
+        $midPointInfo = array_map(function($pointName){
+            return $this->Station->findByTitle($pointName);
+        }, $midPointNames);
+
+        $fareArray = array();
+
+        $outArray = array();
+
+        foreach($midPointInfo as $info){
+
+            $fareArray = array_map(function($midPointInfo) use (&$info){
+                return $this->Station->getFareById($info, $midPointInfo['id']);
+            }, $points);
+
+            $coordinate = $this->Station->find('stationLocation',array(
+                'conditions' => array('id' => $info['Station']['id'])));
+
+            $outArray[] = $this->Station->putPointInfo(array($info['Station']['id'],
+                $info['Station']['title'], 'midpoint',
+                $fareArray[0], $fareArray[1],
+                0, $coordinate['lon'], $coordinate['lat'],
+                0, true));
+
+            $fareArray = array();
+        }
+
+        foreach($points as $point)
+            $outArray[] = $point;
+
+
+        $this->set(array('compare' => $outArray));
+    }
+
+    public function compareByFare(){
+
+        $stationIds = array();
+
+        $stationIds[] = $this->request->query['station_0'];
+        $stationIds[] = $this->request->query['station_1'];
+        
+        $points = $this->Station->getPointInfo($stationIds);
+
+        $fareInfo = array();
+
+        $keys = array('station_0', 'station_1');
+
+        $pointsInfo = array_map(function($id){
+            return $this->Station->findById($id);
+        }, $stationIds);
+
+        $stationInfos_0 = $this->Station->ExtractInfo($pointsInfo[0], $keys);
+        $stationInfos_1 = $this->Station->ExtractInfo($pointsInfo[1], $keys);
+
+        $middleCoordinate = $this->Station->getMiddlePoint($points);
+        $tmp = array();
+
+        foreach($stationInfos_0 as $stationInfo_0){
+            $stationPurposeId = $stationInfo_0['station_purpose_id'];
+
+
+            $stationFare_0 = array($stationInfo_0['fare'], $stationInfo_0['card_fare'],
+                $stationInfo_0['child_fare'], $stationInfo_0['child_card_fare']);
+
+            foreach($stationInfos_1 as $stationInfo_1){
+
+                if($stationPurposeId == $stationInfo_1['station_purpose_id']
+                    && !in_array($stationPurposeId, $tmp)){
+
+                    $stationFare_1 = array($stationInfo_1['fare'], $stationInfo_1['card_fare'],
+                        $stationInfo_1['child_fare'], $stationInfo_1['child_card_fare']);
+
+                    $coordinate = $this->Station->find('stationLocation',array(
+                        'conditions' => array('id' => $stationPurposeId)));
+
+                    $fareInfo[] = array('type' => 'midpoint', 
+                        'title' => $this->Station->find('stationName',array(
+                            'conditions' => array('id' => $stationPurposeId))),
+
+                        'fare_midpoint_station_0' => 
+                        $this->Station->putFareInfo($stationFare_0),
+
+                            'fare_midpoint_station_1' => 
+                            $this->Station->putFareInfo($stationFare_1),
+
+                                'fare_abs' => abs($stationFare_0[0] - $stationFare_1[0]),
+                                'lon' => $coordinate['lon'], 
+                                'lat' => $coordinate['lat'],
+                                'dis' => sqrt(($coordinate['lon'] - $middleCoordinate['lon']) * ($coordinate['lon'] - $middleCoordinate['lon']) +
+                                ($coordinate['lat'] - $middleCoordinate['lat']) * ($coordinate['lat'] - $middleCoordinate['lat'])),
+                                'id' => $stationPurposeId);
+
+                    $tmp[] = $stationPurposeId;
+                }
+            }
+        }
+
+        // 最低額の取得
+        $minFare = min(array_column($fareInfo, 'fare_abs'));
+        $fare = array_filter($fareInfo, function($fare) use (&$minFare){
+            return $fare['fare_abs'] == $minFare;
+        });
+
+        uasort($fare,function($a, $b){
+            $dis_1 = $a['dis'];
+            $dis_2 = $b['dis'];
+            if($dis_1 == $dis_2){
+                return 0;
+            }
+            return ($dis_1 < $dis_2) ? -1 : 1;
+        });
+
+        foreach($points as $point)
+            $fare[] = $point;
+
+        $count = 0;
+        foreach($fare as $info){
+
+            $info['priority'] = ($count < 5 && $info['type'] == "midpoint")
+                ? true : false;
+
+            $out[] = $info; 
+            $count++;
+        }
+
+        $this->set(array('compare' => $out));
+
+    }
+}
