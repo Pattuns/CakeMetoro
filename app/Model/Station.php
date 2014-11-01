@@ -92,7 +92,7 @@ class Station extends AppModel {
                 $point['Station']['title'], 'point',
                 $this->putFareInfo(array_pad($samp = array(), 4, 0)),
                 $this->putFareInfo(array_pad($samp = array(), 4, 0)),
-                0, $coordinate['lon'], $coordinate['lat'], 0, false));
+                0, $coordinate['lon'], $coordinate['lat'], 0, false, 0, 0));
         }
 
         return $points;

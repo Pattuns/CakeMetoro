@@ -157,7 +157,8 @@ class Station extends AppModel {
             $array['type'], $array['fare_midpoint_station_0'],
             $array['fare_midpoint_station_1'], $array['fare_abs'],
             $array['lon'], $array['lat'], $array['dis'],
-            $array['priority']) = $point;
+            $array['priority'], $array['distance_station_0'],
+            $array['distance_station_1']) = $point;
         return $array;
     }
 
@@ -212,4 +213,6 @@ class Station extends AppModel {
         // ミリメートルまで
         return round(sqrt(pow($meridian*$radlat,2) + pow($prime*cos($average)*$radlon,2)),3) / 1000;
     }
+
+
 }
