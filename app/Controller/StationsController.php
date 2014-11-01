@@ -232,6 +232,7 @@ class StationsController extends AppController {
 
         $points = $this->Station->getPointInfo($stationIds);
 
+
         $middleCoordinate = $this->Station->getMiddlePoint($points);
 
         $conskey = Configure::read("CONSKEY");
@@ -270,6 +271,11 @@ class StationsController extends AppController {
 
         $outArray = array();
 
+        $yappkey = Configure::read("YAPPKEY");
+
+        $opts = array('http'=>array('header' => "User-Agent:MyAgent/1.0\r\n"));
+
+        $context = stream_context_create($opts);
         foreach($midPointInfo as $info){
 
             $fareArray = array_map(function($midPointInfo) use (&$info){
@@ -279,11 +285,17 @@ class StationsController extends AppController {
             $coordinate = $this->Station->find('stationLocation',array(
                 'conditions' => array('id' => $info['Station']['id'])));
 
+            $distanceStation0 = $this->Station->distance_hubeny($coordinate['lat'], $coordinate['lon'],
+                $points[0]['lat'], $points[0]['lon']);
+
+            $distanceStation1 = $this->Station->distance_hubeny($coordinate['lat'], $coordinate['lon'],
+                $points[1]['lat'], $points[1]['lon']);
+
             $outArray[] = $this->Station->putPointInfo(array($info['Station']['id'],
                 $info['Station']['title'], 'midpoint',
                 $fareArray[0], $fareArray[1],
                 0, $coordinate['lon'], $coordinate['lat'],
-                0, true));
+                0, true, $distanceStation0, $distanceStation1));
 
             $fareArray = array();
         }
@@ -294,6 +306,7 @@ class StationsController extends AppController {
 
         $this->set(array('compare' => $outArray));
     }
+
 
     public function compareByFare(){
 

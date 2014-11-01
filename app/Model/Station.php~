@@ -7,29 +7,29 @@ App::uses('AppModel', 'Model');
  */
 class Station extends AppModel {
 
-/**
- * Display field
- *
- * @var string
- */
-	public $displayField = 'title';
+    /**
+     * Display field
+     *
+     * @var string
+     */
+    public $displayField = 'title';
 
 
-	//The Associations below have been created with all possible keys, those that are not needed can be removed
+    //The Associations below have been created with all possible keys, those that are not needed can be removed
 
-/**
- * hasOne associations
- *
- * @var array
- */
-	public $hasMany = array(
-		'Place' => array(
-			'className' => 'Place',
-			'foreignKey' => 'station_id',
-			'conditions' => '',
-			'fields' => '',
-			'order' => ''
-		),
+    /**
+     * hasOne associations
+     *
+     * @var array
+     */
+    public $hasMany = array(
+        'Place' => array(
+            'className' => 'Place',
+            'foreignKey' => 'station_id',
+            'conditions' => '',
+            'fields' => '',
+            'order' => ''
+        ),
         'station_0' => array(
             'className' => 'Fare',
             'foreignKey' => 'station_0'
@@ -38,7 +38,7 @@ class Station extends AppModel {
             'className' => 'Fare',
             'foreignKey' => 'station_1'
         )
-	);
+    );
 
     public $findMethods = array('stationName' => true,
         'stationLocation' => true);
@@ -68,10 +68,10 @@ class Station extends AppModel {
             }
 
             if($num != 0){
-            return array('lon' => $lonNum / $num, 'lat' => $latNum / $num);
+                return array('lon' => $lonNum / $num, 'lat' => $latNum / $num);
             }
             else{
-                return array(NULL);
+                return array('lon' => 'null', 'lat' => 'null');
             }
         }
     }
@@ -139,14 +139,14 @@ class Station extends AppModel {
         $num = count($points);
         $lonNum = $latNum = 0;
 
-            foreach($points as $point){
+        foreach($points as $point){
 
-                $lonNum += $point['lon'];
-                $latNum += $point['lat'];
+            $lonNum += $point['lon'];
+            $latNum += $point['lat'];
 
-            }
+        }
 
-            return array('lon' => $lonNum / $num, 'lat' => $latNum / $num);
+        return array('lon' => $lonNum / $num, 'lat' => $latNum / $num);
     }
 
     // ポイント情報挿入用関数
@@ -185,15 +185,31 @@ class Station extends AppModel {
                         $fareInfo['station_1']:$fareInfo['station_0'];
 
                     $out[] = array(
-                      'station_purpose_id' => $station_purpose_id,
-                      'fare' => $fareInfo['fare'],
-                      'child_fare' => $fareInfo['child_fare'],
-                      'card_fare' => $fareInfo['card_fare'],
-                      'child_card_fare' => $fareInfo['child_card_fare']);
+                        'station_purpose_id' => $station_purpose_id,
+                        'fare' => $fareInfo['fare'],
+                        'child_fare' => $fareInfo['child_fare'],
+                        'card_fare' => $fareInfo['card_fare'],
+                        'child_card_fare' => $fareInfo['child_card_fare']);
                 }
             }
         }
 
         return $out;
+    }
+
+    function distance_hubeny($lat1, $lon1, $lat2, $lon2) {
+        $radlat  = deg2rad(abs($lat1 - $lat2));
+        $radlon  = deg2rad(abs($lon1 - $lon2));
+        $average = deg2rad($lat1 + (($lat2 - $lat1) / 2));
+        $meridian = 0;
+        $prime    = 0;
+
+        // 世界測地系
+        $temp     = 1.0 - 0.00669438 * pow(sin($average),2);
+        $meridian = 6335439.0 / sqrt(pow($temp,3));         // 子午線曲率半径
+        $prime    = 6378137.0 / sqrt($temp);                // 卯酉線曲率半径
+
+        // ミリメートルまで
+        return round(sqrt(pow($meridian*$radlat,2) + pow($prime*cos($average)*$radlon,2)),3) / 1000;
     }
 }
