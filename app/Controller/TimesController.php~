@@ -10,99 +10,99 @@ App::uses('AppController', 'Controller');
  */
 class TimesController extends AppController {
 
-/**
- * Components
- *
- * @var array
- */
-	public $components = array('Paginator', 'Session', 'RequestHandler');
+    /**
+     * Components
+     *
+     * @var array
+     */
+    public $components = array('Paginator', 'Session', 'RequestHandler');
 
-/**
- * index method
- *
- * @return void
- */
-	public function index() {
-		$this->Time->recursive = 0;
-		$this->set('times', $this->Paginator->paginate());
-	}
+    /**
+     * index method
+     *
+     * @return void
+     */
+    public function index() {
+        $this->Time->recursive = 0;
+        $this->set('times', $this->Paginator->paginate());
+    }
 
-/**
- * view method
- *
- * @throws NotFoundException
- * @param string $id
- * @return void
- */
-	public function _view($id = null) {
-		if (!$this->Time->exists($id)) {
-			throw new NotFoundException(__('Invalid time'));
-		}
-		$options = array('conditions' => array('Time.' . $this->Time->primaryKey => $id));
-		$this->set('time', $this->Time->find('first', $options));
-	}
+    /**
+     * view method
+     *
+     * @throws NotFoundException
+     * @param string $id
+     * @return void
+     */
+    public function _view($id = null) {
+        if (!$this->Time->exists($id)) {
+            throw new NotFoundException(__('Invalid time'));
+        }
+        $options = array('conditions' => array('Time.' . $this->Time->primaryKey => $id));
+        $this->set('time', $this->Time->find('first', $options));
+    }
 
-/**
- * add method
- *
- * @return void
- */
-	public function _add() {
-		if ($this->request->is('post')) {
-			$this->Time->create();
-			if ($this->Time->save($this->request->data)) {
-				$this->Session->setFlash(__('The time has been saved.'));
-				return $this->redirect(array('action' => 'index'));
-			} else {
-				$this->Session->setFlash(__('The time could not be saved. Please, try again.'));
-			}
-		}
-	}
+    /**
+     * add method
+     *
+     * @return void
+     */
+    public function _add() {
+        if ($this->request->is('post')) {
+            $this->Time->create();
+            if ($this->Time->save($this->request->data)) {
+                $this->Session->setFlash(__('The time has been saved.'));
+                return $this->redirect(array('action' => 'index'));
+            } else {
+                $this->Session->setFlash(__('The time could not be saved. Please, try again.'));
+            }
+        }
+    }
 
-/**
- * edit method
- *
- * @throws NotFoundException
- * @param string $id
- * @return void
- */
-	public function _edit($id = null) {
-		if (!$this->Time->exists($id)) {
-			throw new NotFoundException(__('Invalid time'));
-		}
-		if ($this->request->is(array('post', 'put'))) {
-			if ($this->Time->save($this->request->data)) {
-				$this->Session->setFlash(__('The time has been saved.'));
-				return $this->redirect(array('action' => 'index'));
-			} else {
-				$this->Session->setFlash(__('The time could not be saved. Please, try again.'));
-			}
-		} else {
-			$options = array('conditions' => array('Time.' . $this->Time->primaryKey => $id));
-			$this->request->data = $this->Time->find('first', $options);
-		}
-	}
+    /**
+     * edit method
+     *
+     * @throws NotFoundException
+     * @param string $id
+     * @return void
+     */
+    public function _edit($id = null) {
+        if (!$this->Time->exists($id)) {
+            throw new NotFoundException(__('Invalid time'));
+        }
+        if ($this->request->is(array('post', 'put'))) {
+            if ($this->Time->save($this->request->data)) {
+                $this->Session->setFlash(__('The time has been saved.'));
+                return $this->redirect(array('action' => 'index'));
+            } else {
+                $this->Session->setFlash(__('The time could not be saved. Please, try again.'));
+            }
+        } else {
+            $options = array('conditions' => array('Time.' . $this->Time->primaryKey => $id));
+            $this->request->data = $this->Time->find('first', $options);
+        }
+    }
 
-/**
- * delete method
- *
- * @throws NotFoundException
- * @param string $id
- * @return void
- */
-	public function _delete($id = null) {
-		$this->Time->id = $id;
-		if (!$this->Time->exists()) {
-			throw new NotFoundException(__('Invalid time'));
-		}
-		$this->request->onlyAllow('post', 'delete');
-		if ($this->Time->delete()) {
-			$this->Session->setFlash(__('The time has been deleted.'));
-		} else {
-			$this->Session->setFlash(__('The time could not be deleted. Please, try again.'));
-		}
-		return $this->redirect(array('action' => 'index'));
-	}
+    /**
+     * delete method
+     *
+     * @throws NotFoundException
+     * @param string $id
+     * @return void
+     */
+    public function _delete($id = null) {
+        $this->Time->id = $id;
+        if (!$this->Time->exists()) {
+            throw new NotFoundException(__('Invalid time'));
+        }
+        $this->request->onlyAllow('post', 'delete');
+        if ($this->Time->delete()) {
+            $this->Session->setFlash(__('The time has been deleted.'));
+        } else {
+            $this->Session->setFlash(__('The time could not be deleted. Please, try again.'));
+        }
+        return $this->redirect(array('action' => 'index'));
+    }
 
     public function compareByTime(){
 
@@ -115,25 +115,28 @@ class TimesController extends AppController {
         $now = $this->request->query['now'];
 
         $splitNow = explode(":",$now);
-    
+
         $time = mktime((int)$splitNow[0],(int)$splitNow[1],0);
 
-        if(mktime(23,59,0) > $time && mktime(23,50,0) < $time){
-            echo 'Test';
+        if((mktime(23,59,0) > $time && mktime(23,50,0) < $time)||
+            (mktime(5,0,0) > $time && mktime(0,0,0) < $time)) {
+            $now = '05:00';
         }
+        else{
 
 
-        $hour = $splitNow[0];
-        if(($minutes = ceil($splitNow[1]/10) * 10) == 60){
-            $minutes = "00";
-            $hour = (int)$splitNow[0] + 1;
-            if($hour < 10)
-                $hour = "0" . $hour;
+            $hour = $splitNow[0];
+            if(($minutes = ceil($splitNow[1]/10) * 10) == 60){
+                $minutes = "00";
+                $hour = (int)$splitNow[0] + 1;
+                if($hour < 10)
+                    $hour = "0" . $hour;
+            }
+            if($minutes == 0)
+                $minutes = '00';
+
+            $now = $hour . ":" .$minutes;
         }
-        if($minutes == 0)
-            $minutes = '00';
-
-        $now = $hour . ":" .$minutes;
 
         $this->Time->Arrive->recursive = 0;
         $pointStationInfo = array_map(function($id){
@@ -141,8 +144,8 @@ class TimesController extends AppController {
             $coordinate = $this->Time->Arrive->find('stationLocation',array(
                 'conditions' => array('id' => $id)));
             return array('id' => $info['Arrive']['id'],
-            'title' => $info['Arrive']['title'],
-            'coordinate' => $coordinate);
+                'title' => $info['Arrive']['title'],
+                'coordinate' => $coordinate);
         }, $stationIds);
 
 
@@ -194,8 +197,14 @@ class TimesController extends AppController {
         $this->set('pointStationInfo', $pointStationInfo);
         $this->set('meetupTimes', $infoArray);
 
+        $OutArray = array();
+        for($i = 0; $i < 10; $i++){
+            $OutArray[$i] = $infoArray[$i];
+        }
+
+
         $out = array('points' => $pointStationInfo,
-            'middle_points' => $infoArray);
+            'middle_points' => $OutArray);
         // $this->set(array('points' => $pointStationInfo));
         $this->set(array('compare' => $out));
 
@@ -236,8 +245,8 @@ class TimesController extends AppController {
         // debug($timesInfo_0);
         // debug($timesInfo_1);
 
-		$this->set('timesInfo_0', $timesInfo_0);
-		$this->set('timesInfo_1', $timesInfo_1);
+        $this->set('timesInfo_0', $timesInfo_0);
+        $this->set('timesInfo_1', $timesInfo_1);
         $out = array('station_0' => $timesInfo_0,
             'station_1' => $timesInfo_1);
         $this->set(array('routeInfoStation' => $out));

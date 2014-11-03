@@ -197,8 +197,14 @@ class TimesController extends AppController {
         $this->set('pointStationInfo', $pointStationInfo);
         $this->set('meetupTimes', $infoArray);
 
+        $OutArray = array();
+        for($i = 0; $i < 10; $i++){
+            $OutArray[$i] = $infoArray[$i];
+        }
+
+
         $out = array('points' => $pointStationInfo,
-            'middle_points' => $infoArray);
+            'middle_points' => $OutArray);
         // $this->set(array('points' => $pointStationInfo));
         $this->set(array('compare' => $out));
 
